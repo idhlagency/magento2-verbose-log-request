@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 namespace Ampersand\VerboseLogRequest\Logger\Handler;
 
 use Ampersand\VerboseLogRequest\Service\IsVerbose;
@@ -7,13 +8,14 @@ use Magento\Framework\App\DeploymentConfig;
 use Magento\Framework\App\State;
 use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Logger\Handler\Base as BaseLogHandler;
+use Monolog\LogRecord;
 
 class Debug extends \Magento\Developer\Model\Logger\Handler\Debug
 {
     /**
      * @var bool
      */
-    private bool $isVerboseLogVirtualType = false;
+    private bool $isVerboseLogVirtualType;
 
     /**
      * @var BaseLogHandler
@@ -46,38 +48,41 @@ class Debug extends \Magento\Developer\Model\Logger\Handler\Debug
     ) {
         parent::__construct($filesystem, $state, $deploymentConfig, $filePath);
         $this->baseLogHandler = $baseLogHandler;
-        $this->isVerboseLogVirtualType = $isVerboseLogVirtualType;
+        $this->isVerboseLogVirtualType = (bool)$isVerboseLogVirtualType;
         $this->isVerboseFlag = $isVerbose;
     }
 
     /**
      * @inheritDoc
      */
-    public function isHandling(array $record): bool
+    public function isHandling(LogRecord $record): bool
     {
         if ($this->isVerboseLogVirtualType) {
             return $this->isHandlingVerboseDebugMode($record);
         }
+
         return $this->isHandlingDebugMode($record);
     }
 
     /**
-     * We should log if
-     * - Level is debug
-     * - Dev log flag is enabled in core_config_data
-     *      - OR the per process flag is set
+     *  We should log if
+     *  - Level is debug
+     *  - Dev log flag is enabled in core_config_data
+     *       - OR the per process flag is set
      *
-     * @param array $record
+     * @param LogRecord $record
      * @return bool
      */
-    private function isHandlingDebugMode(array $record): bool // @phpstan-ignore-line
+    private function isHandlingDebugMode(LogRecord $record): bool  // @phpstan-ignore-line
     {
         // @phpstan-ignore-next-line | expects array{level: 100|200|250|300|400|500|550|600}, array given.
         $isHandling = parent::isHandling($record);
+
         if (!$this->isVerboseFlag->isVerbose()) {
             // We do not have any per process logging to handle so just return parent
             return $isHandling;
         }
+
         if ($isHandling) {
             // If true we are at the right log level, and we have debug logging enabled outright
             return $isHandling;
@@ -96,13 +101,13 @@ class Debug extends \Magento\Developer\Model\Logger\Handler\Debug
      * - the per process flag is set
      *
      * This allows us to use this mechanism of the handler to add very granular/verbose logging for systems which
-     * already have debug logging active, we wouldnt wan't to install this in one of those systems and flood the
-     * existing debug.log file with GB of data
+     * already have debug logging active; we wouldn't want to install this in one of those systems and flood the
+     * existing debug.log file with GB of data.
      *
-     * @param array $record
+     * @param LogRecord $record
      * @return bool
      */
-    private function isHandlingVerboseDebugMode(array $record): bool  // @phpstan-ignore-line
+    private function isHandlingVerboseDebugMode(LogRecord $record): bool // @phpstan-ignore-line
     {
         // @phpstan-ignore-next-line | expects array{level: 100|200|250|300|400|500|550|600}, array given.
         return ($this->isVerboseFlag->isVerbose() && $this->baseLogHandler->isHandling($record));
