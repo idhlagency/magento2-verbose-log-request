@@ -14,7 +14,7 @@ class LoggerProxy extends VanillaLoggerProxy
      *
      * @param FileFactory $fileFactory
      * @param QuietFactory $quietFactory
-     * @param bool|string $loggerAlias
+     * @param null|string $loggerAlias
      * @param bool $logAllQueries
      * @param float $logQueryTime
      * @param bool $logCallStack
